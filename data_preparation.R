@@ -8,6 +8,7 @@ library(lubridate)
 library(stringr)
 library(sf)
 library(raster)
+library(dplyr)
 
 ############## this part can be (hopefully) deleted soon ##############
 #### for now we receive the data in 7 separate .csv files named out_0.csv ... out_6.csv
@@ -83,30 +84,40 @@ tmp_points_outside<-as.data.frame(points_outside_Ger)
 #write.csv(tmp_points_outside,"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/temporal_results/points_outside_GER.csv", row.names=FALSE)
 
 
-#### check some data properties
-names(main_dat)
-length(unique(main_dat$idMessstelle__messstellenCode))    #7111
-length(unique(main_dat$idMessstelle__messstellenName))    #11704
+############## sum up events
+#### create smaler data set only with neccessary columns
+tmp_main<-subset(main_dat, select=c("id", "art__art", "individuenzahlGesamt", "idMessstelle__id", "date"))
+### create new id
+tmp_main$new_id<-paste0(tmp_main$idMessstelle__id,"_", tmp_main$date)
+tmp_main$new_id<-gsub("-","_",tmp_main$new_id)
+#### remove first row (was an X due to the csv writing process)
+tmp_main<-tmp_main[-1]
+### need for more specific ID
+tmp_main$new_id_spec<-paste0(tmp_main$art__art,"_",tmp_main$new_id)
+tmp_main$new_id_spec<-gsub(" ","_",tmp_main$new_id_spec)
+##### just keep the rows needed
+tmp_main<-tmp_main[c(2,6)]
+#### sum them up
+tmp_main<-tapply(tmp_main$individuenzahlGesamt, tmp_main$new_id_spec, FUN=sum)
+tmp_main<-as.data.frame(tmp_main)
+### make row names to column
+tmp_main$new_id_spec <- row.names(tmp_main)
 
-#### check distribution of sampling points across Germany
+names(tmp_main)[1]<-"individuenzahlGesamt"
+tmp_main<-distinct(tmp_main, new_id_spec, .keep_all = T)
 
-tmp_dat<-main_dat[sample(nrow(main_dat), 100000), ]
-
-max(tmp_dat$Y_coord_EPSG_25832[tmp_dat$Y_coord_EPSG_25832 != max(tmp_dat$Y_coord_EPSG_25832)])
-tmp_dat<-tmp_dat[tmp_dat$Y_coord_EPSG_25832<6083998,]
-
-min(tmp_dat$Y_coord_EPSG_25832[tmp_dat$Y_coord_EPSG_25832 != min(tmp_dat$Y_coord_EPSG_25832)])
-
-max(tmp_dat$idMessstelle__xKoordinate)
-tmp_dat<-tmp_dat[tmp_dat$idMessstelle__xKoordinate<46115364,]
-
-plot(tmp_dat$X_coord_EPSG_25832,tmp_dat$Y_coord_EPSG_25832)
-
-
-length(unique(main_dat$idMessstelle__wasserkoerperCode__wasserkoerperCode))
+### create same ID in main data set
+main_dat$new_id_spec<-paste0(main_dat$idMessstelle__id,"_", main_dat$date)
+main_dat$new_id_spec<-paste0(main_dat$art__art,"_",main_dat$new_id_spec)
+main_dat$new_id_spec<-gsub("-","_",main_dat$new_id_spec)
+main_dat$new_id_spec<-gsub(" ","_",main_dat$new_id_spec)
+#### remove old indivuenzahlGesamt column (and number of juveniles (not needed for the moment))
+main_dat<-main_dat[-c(9,10)]
+main_dat<-distinct(main_dat, new_id_spec, .keep_all = T)
+main_dat<-merge(main_dat,tmp_main, by="new_id_spec")
+rm(tmp_main)
+#write.csv(main_dat,"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/temporal_results/main_data_summed_up.csv", row.names=FALSE)
 
 
 
 
-plot(tmp_dat$idMessstelle__xKoordinate,tmp_dat$idMessstelle__yKoordinate)
-proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
