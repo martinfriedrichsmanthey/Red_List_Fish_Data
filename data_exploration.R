@@ -34,3 +34,22 @@ for (i in 1:length(specs))
   dev.off()
 }
 
+######### plots to show spatial distribution of "Messstellen" for several years
+
+### create year column
+main_dat$year<-year(main_dat$date)
+years<-unique(main_dat$year)
+
+### get map of Germany
+Germany <- getData("GADM",country="DEU",level=0)
+### transform and plot map of Germany
+Germany_trnsfrmd = spTransform(Germany,"+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs +type=crs")
+
+for (i in 1:length(years))
+  {
+  tmp_years<-subset(main_dat, main_dat$year==years[i])
+  png(file= paste0(plot_DIR,years[i],".png"))
+  plot(Germany_trnsfrmd,col = 'red', main=paste0(years[i]))
+  points(tmp_years$X_coord_EPSG_25832,tmp_years$Y_coord_EPSG_25832)
+  dev.off()
+  }
