@@ -52,4 +52,5 @@ for (i in 1:length(years))
   plot(Germany_trnsfrmd,col = 'red', main=paste0(years[i]))
   points(tmp_years$X_coord_EPSG_25832,tmp_years$Y_coord_EPSG_25832)
   dev.off()
-  }
+}
+

@@ -117,3 +117,66 @@ main_dat<-distinct(main_dat, new_id_spec, .keep_all = T)
 main_dat<-merge(main_dat,tmp_main, by="new_id_spec")
 rm(tmp_main)
 #write.csv(main_dat,"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/temporal_results/main_data_summed_up.csv", row.names=FALSE)
+
+
+##### remove points outside of Germany
+main_dat_ger<-subset(main_dat,main_dat$location=="DEU")  ### 6715 points outside of Germany
+
+#### check the diversity of methods
+table(main_dat_ger$befischungMethode__befischungMethode)
+#Elektrobefischung      Schleppnetzbefischung                  sonstiges        Stellnetzbefischung Videoaufnahmen Fischtreppe 
+#216774                       2418                      17691                       2066                        829 
+
+#### check "sonstiges"
+tmp_sonstiges<-subset(main_dat_ger,main_dat_ger$befischungMethode__befischungMethode=="sonstiges")
+#### bei Befischungsmethode "sonstiges" stehen ein paar INfos zur Befischung noch in "MethodeZusatz" zur Methode
+#### cop "Anmerkungen" into "Befischungsmethode"
+tmp_sonstiges$befischungMethode__befischungMethode<-tmp_sonstiges$methodeZusatz__methodeZusatz
+#### delete "sonstiges" in main_dat_ger
+main_dat_ger<-main_dat_ger[!main_dat_ger$befischungMethode__befischungMethode=="sonstiges",]
+#### add new tmp_sonstiges to main_dat_ger
+main_dat_ger<-rbind(main_dat_ger,tmp_sonstiges)
+
+table(main_dat_ger$befischungMethode__befischungMethode)
+#         Elektrobefischung            Hamen                    Kescher                      Reuse 
+#10108     216774                       2325                         75                       3262 
+#Schleppnetzbefischung      SichtprÃ¼fung        Stellnetzbefischung Videoaufnahmen Fischtreppe             Zugnetz 
+#2418                        269                       2066                        829                       1652
+
+### set blank spaces (10108) to NA
+main_dat_ger$befischungMethode__befischungMethode[main_dat_ger$befischungMethode__befischungMethode == ""] <- NA 
+table(main_dat_ger$befischungMethode__befischungMethode)
+#Elektrobefischung            Hamen                    Kescher                      Reuse      Schleppnetzbefischung 
+#216774                       2325                         75                       3262                       2418 
+#SichtprÃ¼fung        Stellnetzbefischung Videoaufnahmen Fischtreppe            Zugnetz 
+#269                       2066                        829                       1652 
+
+### remove NA's in Befischungsmethode from data set
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$befischungMethode__befischungMethode=="NA")
+table(main_dat_ger$befischungMethode__befischungMethode)
+
+##### further cleaning of the projekt column
+table(main_dat_ger$projekt__projekt)
+### many projects which are related to WRRL but named differently (e.g. WRRL 2011 Los2, WRRLL-Monitorimg 2006-2007)
+main_dat_ger$projekt__projekt<-ifelse(grepl("WRRL", main_dat_ger$projekt__projekt)==TRUE, "WRRL", main_dat_ger$projekt__projekt)
+table(main_dat_ger$projekt__projekt)
+
+unique(main_dat_ger$art__art)
+table(main_dat_ger$art__art)
+
+
+
+
+#### remove all species with less than 10 occurrences in main_dat_ger
+main_dat_ger<-main_dat_ger[main_dat_ger$art__art %in% names(which(table(main_dat$art__art) > 10)), ]
+####still some cleaning needed
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Acipenser sturio")
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Alosa alosa")
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Lampetra spec.")
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Keine fische")
+main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Coregonus spec.")
+
+table(main_dat_ger$art__art)
+length(unique(main_dat_ger$art__art)) #### 74 species left
+
+table(main_dat_ger$projekt__projekt)
