@@ -113,8 +113,9 @@ for (i in 1:length(specs))
   plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt, main=paste0(specs[i]))
   mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
   dev.off()
-  rm(tmp_specs)
+  rm(tmp_specs, max,min)
 }
+rm(specs)
 ###### plots with abundance ~ year ####
 plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
 specs<-unique(main_dat$art__art)
@@ -128,6 +129,7 @@ for (i in 1:length(specs))
   dev.off()
   rm(tmp_specs)
 }
+rm(specs)
 ###### 
 tmp_ID_data<-data.frame(matrix(ncol = 2, nrow = 0))
 colnames(tmp_ID_data) <- c('uniqueID', 'n_years')
