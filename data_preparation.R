@@ -110,11 +110,38 @@ for (i in 1:length(specs))
   max<-max(tmp_specs$individuenzahlGesamt)
   min<-min(tmp_specs$individuenzahlGesamt)
   png(file= paste0(plot_DIR,specs[i],".png"))
-  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt, main=paste0(specs[i]))
+  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt, main=paste0(specs[i]), xlim =c(0,365))
   mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
   dev.off()
   rm(tmp_specs, max,min)
 }
+
+#### same plots with log abundance
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  max<-max(tmp_specs$individuenzahlGesamt)
+  min<-min(tmp_specs$individuenzahlGesamt)
+  png(file= paste0(plot_DIR,"log_",specs[i],".png"))
+  plot(tmp_specs$day_of_year, log(tmp_specs$individuenzahlGesamt), main=paste0("log ",specs[i]), xlim =c(0,365))
+  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+  dev.off()
+  rm(tmp_specs, max,min)
+}
+
+#### same plots with abundance/effort
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  max<-max(tmp_specs$individuenzahlGesamt)
+  min<-min(tmp_specs$individuenzahlGesamt)
+  png(file= paste0(plot_DIR,"effort_",specs[i],".png"))
+  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt/tmp_specs$befischteStrecke, main=paste0("effort ",specs[i]), xlim =c(0,365))
+  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+  dev.off()
+  rm(tmp_specs, max,min)
+}
+
 rm(specs)
 ###### plots with abundance ~ year ####
 plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
@@ -124,8 +151,38 @@ specs<-unique(main_dat$art__art)
 for (i in 1:length(specs))
 {
   tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
-  png(file= paste0(plot_DIR,specs[i],"_year.png"))
+  png(file= paste0(plot_DIR,"year_",specs[i],".png"))
   boxplot(tmp_specs$individuenzahlGesamt~tmp_specs$year, main=paste0(specs[i]))
+  dev.off()
+  rm(tmp_specs)
+}
+
+#### same plots on log scale
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  png(file= paste0(plot_DIR,"log_year_",specs[i],".png"))
+  boxplot(log(tmp_specs$individuenzahlGesamt)~tmp_specs$year, main=paste0("log ",specs[i]))
+  dev.off()
+  rm(tmp_specs)
+}
+
+#### same plots on with effort scale
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  png(file= paste0(plot_DIR,"effort_year_",specs[i],".png"))
+  boxplot(tmp_specs$individuenzahlGesamt/tmp_specs$befischteStrecke~tmp_specs$year, main=paste0("effort ",specs[i]))
+  dev.off()
+  rm(tmp_specs)
+}
+
+#### same plots on with log/effort scale
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  png(file= paste0(plot_DIR,"log_effort_year_",specs[i],".png"))
+  boxplot(log(tmp_specs$individuenzahlGesamt/tmp_specs$befischteStrecke)~tmp_specs$year, main=paste0("log_effort ",specs[i]))
   dev.off()
   rm(tmp_specs)
 }
