@@ -38,7 +38,7 @@ for (i in 2:length(source_txt))
 }
 ###### create unique ID for each Messstelle ####
 # this has to be done, because MfN is assigning IDs for each federal state separately. Therefore ID 1 occurs 14 times etc.
-main_dat$unique_ID<-paste0(main_dat$probenameID,"_",main_dat$excelFileName__bundesland__bundesland)
+main_dat$unique_ID<-paste0(main_dat$idMessstelle__messstellenName,"_",main_dat$excelFileName__bundesland__bundesland)
 ###### in some cases "---" has to be changed to NA ########
 main_dat$idMessstelle__messstellenName<-ifelse(main_dat$idMessstelle__messstellenName=="---",NA,main_dat$idMessstelle__messstellenName)
 main_dat$idMessstelle__messstellenCode<-ifelse(main_dat$idMessstelle__messstellenCode=="---",NA,main_dat$idMessstelle__messstellenCode)
@@ -203,9 +203,9 @@ for (i in 1:length(specs))
   rm(tmp_specs)
 }
 rm(specs)
-###### 
+###### remove all unique Ids which have only been sampled ones #####
 tmp_ID_data<-data.frame(matrix(ncol = 2, nrow = 0))
-colnames(tmp_ID_data) <- c('uniqueID', 'n_years')
+colnames(tmp_ID_data) <- c('unique_ID_Messstelle', 'n_years')
 IDs<-unique(main_dat$unique_ID)
 
 for(i in 1:length(IDs))
@@ -215,7 +215,15 @@ tmp_ID_data[i,1]<-paste0(IDs[i])
 tmp_ID_data[i,2]<-length(unique(tmp$year))
 }
 
-rm(list=ls(pattern="tmp*"))
+table(tmp_ID_data$n_years)
+#1    2      3    4    5    6     7    8    9   10   11   12   13   14   15   17        ##### !!! including NAs (example NA_Bayern) 
+#4928 1511  869  659  405  149   79   55   20    7   15   13    4    2    2    2
+
+single_IDs<-tmp_ID_data[tmp_ID_data$n_years==1,]
+main_dat<-subset(main_dat, (!main_dat$unique_ID %in% single_IDs$unique_ID_Messstelle))   ### ~ 23.000 entries removed (NAs kept so far)
+
+rm(list=ls(pattern="tmp*"), single_IDs, IDs)
+###### 
 ### check for combinations of messstelle and methode
 tmp_unique<-unique(main_dat[c("methodeZusatz__methodeZusatz","unique_ID")])
 #### all messstellen which have been sampled with different methods
