@@ -142,6 +142,21 @@ for (i in 1:length(specs))
   rm(tmp_specs, max,min)
 }
 
+#### log plots with mean abundance (because several federal state have sampled the same day in the year)
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+  tmp_agg<-aggregate(individuenzahlGesamt ~ day_of_year, tmp_specs, mean)
+  max<-max(tmp_specs$individuenzahlGesamt)
+  min<-min(tmp_specs$individuenzahlGesamt)
+  png(file= paste0(plot_DIR,"log_mean_",specs[i],".png"))
+  plot(tmp_agg$day_of_year, log(tmp_agg$individuenzahlGesamt), main=paste0("log mean ",specs[i]), xlim =c(0,365))
+  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+  dev.off()
+  rm(tmp_specs, max,min, tmp_agg)
+}
+
+
 rm(specs)
 ###### plots with abundance ~ year ####
 plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
