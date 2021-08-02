@@ -9,6 +9,7 @@ library(stringr)
 library(sf)
 library(raster)
 library(dplyr)
+library(gert)
 ###### [OLD] data comes in .csv format ##############
 #### for now we receive the data in 7 separate .csv files named out_0.csv ... out_6.csv
 #### create main data file
@@ -99,48 +100,48 @@ rm(toMatch)
 #main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Keine fische")
 #main_dat_ger<-subset(main_dat_ger,!main_dat_ger$art__art=="Coregonus spec.")
 #length(unique(main_dat_ger$art__art)) # 74 species left
-###### plots with abundance ~ yearday #####
+###### [run only if you need the plots!] plots with abundance ~ yearday #####
 plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
 specs<-unique(main_dat$art__art)
 
-#### create plots to see when during the year individuals have been caught
-for (i in 1:length(specs))
-{
-  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
-  max<-max(tmp_specs$individuenzahlGesamt)
-  min<-min(tmp_specs$individuenzahlGesamt)
-  png(file= paste0(plot_DIR,specs[i],".png"))
-  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt, main=paste0(specs[i]), xlim =c(0,365))
-  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
-  dev.off()
-  rm(tmp_specs, max,min)
-}
+####create plots to see when during the year individuals have been caught
+#for (i in 1:length(specs))
+#{
+#  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+#  max<-max(tmp_specs$individuenzahlGesamt)
+#  min<-min(tmp_specs$individuenzahlGesamt)
+#  png(file= paste0(plot_DIR,specs[i],".png"))
+#  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt, main=paste0(specs[i]), xlim =c(0,365))
+#  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+#  dev.off()
+#  rm(tmp_specs, max,min)
+#}
 
 #### same plots with log abundance
-for (i in 1:length(specs))
-{
-  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
-  max<-max(tmp_specs$individuenzahlGesamt)
-  min<-min(tmp_specs$individuenzahlGesamt)
-  png(file= paste0(plot_DIR,"log_",specs[i],".png"))
-  plot(tmp_specs$day_of_year, log(tmp_specs$individuenzahlGesamt), main=paste0("log ",specs[i]), xlim =c(0,365))
-  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
-  dev.off()
-  rm(tmp_specs, max,min)
-}
+#for (i in 1:length(specs))
+#{
+#  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+#  max<-max(tmp_specs$individuenzahlGesamt)
+#  min<-min(tmp_specs$individuenzahlGesamt)
+#  png(file= paste0(plot_DIR,"log_",specs[i],".png"))
+#  plot(tmp_specs$day_of_year, log(tmp_specs$individuenzahlGesamt), main=paste0("log ",specs[i]), xlim =c(0,365))
+#  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+#  dev.off()
+#  rm(tmp_specs, max,min)
+#}
 
 #### same plots with abundance/effort
-for (i in 1:length(specs))
-{
-  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
-  max<-max(tmp_specs$individuenzahlGesamt)
-  min<-min(tmp_specs$individuenzahlGesamt)
-  png(file= paste0(plot_DIR,"effort_",specs[i],".png"))
-  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt/tmp_specs$befischteStrecke, main=paste0("effort ",specs[i]), xlim =c(0,365))
-  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
-  dev.off()
-  rm(tmp_specs, max,min)
-}
+#for (i in 1:length(specs))
+#{
+#  tmp_specs<-subset(main_dat, main_dat$art__art==specs[i])
+#  max<-max(tmp_specs$individuenzahlGesamt)
+#  min<-min(tmp_specs$individuenzahlGesamt)
+#  png(file= paste0(plot_DIR,"effort_",specs[i],".png"))
+#  plot(tmp_specs$day_of_year, tmp_specs$individuenzahlGesamt/tmp_specs$befischteStrecke, main=paste0("effort ",specs[i]), xlim =c(0,365))
+#  mtext(paste0("maximum value: ", max, "  //  minimum value: ", min, "  // sampling points: ", dim(tmp_specs)[1]), side=3)
+#  dev.off()
+#  rm(tmp_specs, max,min)
+#}
 
 #### log plots with mean abundance (because several federal state have sampled the same day in the year)
 for (i in 1:length(specs))
