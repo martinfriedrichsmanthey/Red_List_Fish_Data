@@ -223,7 +223,47 @@ single_IDs<-tmp_ID_data[tmp_ID_data$n_years==1,]
 main_dat<-subset(main_dat, (!main_dat$unique_ID %in% single_IDs$unique_ID_Messstelle))   ### ~ 23.000 entries removed (NAs kept so far)
 
 rm(list=ls(pattern="tmp*"), single_IDs, IDs)
-###### 
+###### fill missing species for Messstelle/Year ####
+
+main_dat_copy<-main_dat ### copy main data set to see if the approach works
+
+unique_IDs<-unique(main_dat$unique_ID) #### list all unique ID (unique sampling points)  ### 3792 (including NAs)
+
+for (i in 1:length(unique_IDs))
+  {
+  tmp_1<-subset(main_dat,main_dat$unique_ID==paste0(unique_IDs[i]))  #### subset main data set for the first ID
+
+  tmp_specs_all<-unique(tmp_1$art__art)  ### list all species that have been caught over all years at this ID
+  tmp_years_all<-unique(tmp_1$year) ### list all years this particular ID has been sampled
+  print(paste0("ID ", i, " started"))
+  for (k in 1:length(tmp_years_all))
+    {
+    print(paste0("year ", k, " started"))
+    tmp_year<-subset(tmp_1,tmp_1$year==tmp_years_all[k])  ### subset the ID data set for the first available year
+
+    tmp_missing_spec<-tmp_specs_all[!tmp_specs_all %in% unique(tmp_year$art__art)]   ### create list of species which are missing for this year (compared to the whole list for this sampling point)
+    if(length(tmp_missing_spec)>0)
+      {
+      tmp_new_dat<-tmp_year[c(1:length(tmp_missing_spec)),]  ### create small data set with the length according to the number of missing species
+      tmp_new_dat$individuenzahlGesamt=0  #### set individual number to 0
+      tmp_new_dat$individuenzahlJuvenil=0 #### set the number of juveniles to 0
+      tmp_new_dat$art__art<-tmp_missing_spec ### set the species name to the missing species for this year on this sampling point
+      main_dat_copy<-rbind(main_dat_copy,tmp_new_dat) ### combine with the main data set
+      }
+    rm(tmp_year, tmp_missing_spec, tmp_new_dat)
+    print(paste0("year ", k, " done"))
+    }
+  rm(tmp_1, tmp_specs_all, tmp_years_all)
+  print(paste0("ID ", i, " done"))
+  }
+
+names(tmp_year)
+
+
+
+names(tmp_1)
+rm(tmp)
+rm(unique_Messstellen)
 ### check for combinations of messstelle and methode
 tmp_unique<-unique(main_dat[c("methodeZusatz__methodeZusatz","unique_ID")])
 #### all messstellen which have been sampled with different methods
