@@ -216,8 +216,8 @@ tmp_ID_data[i,2]<-length(unique(tmp$year))
 }
 
 table(tmp_ID_data$n_years)
-#1    2      3    4    5    6     7    8    9   10   11   12   13   14   15   17        ##### !!! including NAs (example NA_Bayern) 
-#4928 1511  869  659  405  149   79   55   20    7   15   13    4    2    2    2
+#   1    2    3    4    5    6     7    8    9   10   11   12   13   14   15   17 
+# 4950 1528  903  665  408  152   80   55   20    7   14   13    4    2    2    2 
 
 single_IDs<-tmp_ID_data[tmp_ID_data$n_years==1,]
 main_dat<-subset(main_dat, (!main_dat$unique_ID %in% single_IDs$unique_ID_Messstelle))   ### ~ 23.000 entries removed (NAs kept so far)
@@ -255,9 +255,29 @@ for (i in 1:length(unique_IDs))
     }
   rm(tmp_1, tmp_specs_all, tmp_years_all)
   print(paste0("ID ", i, " done"))
-  }
+}
 
-names(tmp_year)
+####  Dianas solution
+makeComplete<-function(df){#to add zeros for absenses in a data frame
+  df2<-expand.grid(SiteID=unique(df$SiteID),Year=unique(df$Year),Species=unique(df$Species))
+  df3<-merge(df2,df,by=c("Species","SiteID","Year"),all.x=T)
+  df3$Count[is.na(df3$Count)]<-0
+  return(df3)
+}
+
+###### plots with filled species list [change main data set later!] #####
+plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
+specs<-unique(main_dat_copy$art__art)
+
+#### create plots log abundance ~ year plots for all species
+for (i in 1:length(specs))
+{
+  tmp_specs<-subset(main_dat_copy,main_dat_copy$art__art==specs[i])
+  png(file= paste0(plot_DIR,"filled_list_year_",specs[i],".png"))
+  boxplot(log(tmp_specs$individuenzahlGesamt+1)~tmp_specs$year, main=paste0("filled list ",specs[i]))
+  dev.off()
+  rm(tmp_specs)
+}
 
 
 
