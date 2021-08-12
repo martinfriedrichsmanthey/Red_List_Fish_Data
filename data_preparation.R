@@ -34,14 +34,20 @@ for (i in 2:length(source_txt))
 {
   tmp_file<-read.delim2(source_txt[i], header = TRUE, sep = ",", dec = ",")
   main_dat<-rbind(main_dat,tmp_file)
-  rm(tmp_file)
+  rm(tmp_file, source_txt,i)
 }
-###### create unique ID for each Messstelle ####
-# this has to be done, because MfN is assigning IDs for each federal state separately. Therefore ID 1 occurs 14 times etc.
-main_dat$unique_ID<-paste0(main_dat$idMessstelle__messstellenName,"_",main_dat$excelFileName__bundesland__bundesland)
 ###### in some cases "---" has to be changed to NA ########
 main_dat$idMessstelle__messstellenName<-ifelse(main_dat$idMessstelle__messstellenName=="---",NA,main_dat$idMessstelle__messstellenName)
 main_dat$idMessstelle__messstellenCode<-ifelse(main_dat$idMessstelle__messstellenCode=="---",NA,main_dat$idMessstelle__messstellenCode)
+###### create unique ID for each Messstelle ####
+#### replace NAs in Messstellenname with IDs from Messstellencode
+if(sum(is.na(main_dat$idMessstelle__messstellenName)))
+{
+main_dat$idMessstelle__messstellenName<-ifelse(is.na(main_dat$idMessstelle__messstellenName)==TRUE,main_dat$idMessstelle__messstellenCode,main_dat$idMessstelle__messstellenName)
+}
+# this has to be done, because MfN is assigning IDs for each federal state separately. Therefore ID 1 occurs 14 times etc.
+main_dat$unique_ID<-paste0(main_dat$idMessstelle__messstellenName,"_",main_dat$excelFileName__bundesland__bundesland)
+
 ###### create proper date column and calculate day of year and month of year, year #####
 main_dat$date <- as.Date(main_dat$datum,"%Y-%m-%d")
 main_dat$day_of_year <- yday(main_dat$date)
@@ -216,13 +222,13 @@ tmp_ID_data[i,2]<-length(unique(tmp$year))
 }
 
 table(tmp_ID_data$n_years)
-#   1    2    3    4    5    6     7    8    9   10   11   12   13   14   15   17 
-# 4950 1528  903  665  408  152   80   55   20    7   14   13    4    2    2    2 
+#   1    2    3    4    5    6    7    8    9   10   11   12   13   14   15 
+#5627 2145 1381 1195  898  268  112   70   22    7   14   13    4    2    2
 
 single_IDs<-tmp_ID_data[tmp_ID_data$n_years==1,]
 main_dat<-subset(main_dat, (!main_dat$unique_ID %in% single_IDs$unique_ID_Messstelle))   ### ~ 23.000 entries removed (NAs kept so far)
 
-rm(list=ls(pattern="tmp*"), single_IDs, IDs)
+rm(list=ls(pattern="tmp*"), single_IDs, IDs,i)
 ###### fill missing species for Messstelle/Year ####
 
 main_dat_copy<-main_dat ### copy main data set to see if the approach works
@@ -257,67 +263,49 @@ for (i in 1:length(unique_IDs))
   print(paste0("ID ", i, " done"))
 }
 
+main_dat<- main_dat_copy
+rm(main_dat_copy)
 ####  Dianas solution
-makeComplete<-function(df){#to add zeros for absenses in a data frame
-  df2<-expand.grid(SiteID=unique(df$SiteID),Year=unique(df$Year),Species=unique(df$Species))
-  df3<-merge(df2,df,by=c("Species","SiteID","Year"),all.x=T)
-  df3$Count[is.na(df3$Count)]<-0
-  return(df3)
-}
+#### this fills all species to each Messstelle, what is actually not a real problem
+#makeComplete<-function(df){#to add zeros for absenses in a data frame
+#  df2<-expand.grid(SiteID=unique(df$SiteID),Year=unique(df$Year),Species=unique(df$Species))
+#  df3<-merge(df2,df,by=c("Species","SiteID","Year"),all.x=T)
+#  df3$Count[is.na(df3$Count)]<-0
+#  return(df3)
+#}
 
-###### plots with filled species list [change main data set later!] #####
+###### plots with filled species list #####
 plot_DIR<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/exploratory_plots/"
-specs<-unique(main_dat_copy$art__art)
+specs<-unique(main_dat$art__art)
 
 #### create plots log abundance ~ year plots for all species
 for (i in 1:length(specs))
 {
-  tmp_specs<-subset(main_dat_copy,main_dat_copy$art__art==specs[i])
+  tmp_specs<-subset(main_dat,main_dat$art__art==specs[i])
   png(file= paste0(plot_DIR,"filled_list_year_",specs[i],".png"))
   boxplot(log(tmp_specs$individuenzahlGesamt+1)~tmp_specs$year, main=paste0("filled list ",specs[i]))
   dev.off()
   rm(tmp_specs)
 }
 
+###### clean "methodeZusatz__methodeZusatz" column ####
+unique(main_dat$methodeZusatz__methodeZusatz)
+#[1] NA                     "Bootsfischerei"       "Watfischerei"         "Uferbefischung"       ""                    
+#[6] "Wat & Bootsfischerei" "Bootsfischerei Ufer"
+table(main_dat$methodeZusatz__methodeZusatz)
+#   ""       Bootsfischerei  Bootsfischerei Ufer       Uferbefischung Wat & Bootsfischerei         Watfischerei 
+#24371                46224                  244                12674                  854                52973 
+sum(is.na(main_dat$methodeZusatz__methodeZusatz)) #### 107666
+#### insert NAs for empty columns
+main_dat$methodeZusatz__methodeZusatz<-ifelse(grepl("f", main_dat$methodeZusatz__methodeZusatz)==FALSE, NA, main_dat$methodeZusatz__methodeZusatz)
 
-
-names(tmp_1)
-rm(tmp)
-rm(unique_Messstellen)
-### check for combinations of messstelle and methode
-tmp_unique<-unique(main_dat[c("methodeZusatz__methodeZusatz","unique_ID")])
-#### all messstellen which have been sampled with different methods
-tmp_non_unique<-tmp_unique[duplicated(tmp_unique$unique_ID),]
-
-### remove all methods except "Elektrobefischung"
-main_dat_ger_2004<-subset(main_dat_ger_2004, main_dat_ger_2004$befischungMethode__befischungMethode=="Elektrobefischung")
-# dim(main_dat_ger_2004) ### 202453     37
-
-### check how often a messtelle has been sampled
-tmp_unique<-unique(main_dat_ger_2004[c("idMessstelle__messstellenName", "year")])
-
-toMatch<-names(Filter(function(x) x<2, table(tmp_unique$idMessstelle__messstellenName)))
-
-#### remove alle Messstellen, die nur 1 mal besampled wurden
-
-tmp_test<-main_dat_ger_2004[!grepl(paste0(toMatch[1]),main_dat_ger_2004$idMessstelle__messstellenName),]
-for (i in 2:length(toMatch))
-  {
-  tmp_test<-tmp_test[!grepl(paste0(toMatch[i]),tmp_test$idMessstelle__messstellenName),]
-  }
-### dabei fliegen circa 60.000 Datenpunkte raus
-
-
-tmp_unique_id<-unique(main_dat_ger_2004[c("idMessstelle__id", "year")])
-toMatch_id<-names(Filter(function(x) x<2, table(tmp_unique_id$idMessstelle__id)))
-toMatch_id<-paste0("^",toMatch_id,"$")
-
-tmp_test_id<-main_dat_ger_2004[!grepl(paste0(toMatch_id[1]),main_dat_ger_2004$idMessstelle__id),]
-for (i in 2:length(toMatch))
-{
-  tmp_test<-tmp_test[!grepl(paste0(toMatch[i]),tmp_test$idMessstelle__messstellenName),]
-}
-
-tmp_unique_id<-main_dat_ger_2004[with(main_dat_ger_2004, ave(idMessstelle__id,FUN=length))>1, ]
-table(tmp_unique_id$idMessstelle__id)
-?ave
+main_dat$methodeZusatz__methodeZusatz<-ifelse(grepl("Wat & Bootsfischerei", main_dat$methodeZusatz__methodeZusatz)==TRUE, "both methods", main_dat$methodeZusatz__methodeZusatz)
+main_dat$methodeZusatz__methodeZusatz<-ifelse(grepl("Bootsfischerei", main_dat$methodeZusatz__methodeZusatz)==TRUE, "boat", main_dat$methodeZusatz__methodeZusatz)
+main_dat$methodeZusatz__methodeZusatz<-ifelse(grepl("fisch", main_dat$methodeZusatz__methodeZusatz)==TRUE, "waders", main_dat$methodeZusatz__methodeZusatz)
+##### create cleaned data set for further analyses ###########
+clean_data<-subset(main_dat, select=c("art__art", "individuenzahlGesamt", "excelFileName__bundesland__bundesland", "methodeZusatz__methodeZusatz", "befischteStrecke", "idMessstelle__wasserkoerperCode__gewaesserName", "idMessstelle__wasserkoerperCode__gewaesserkategorie__gewaesserkategorie", "x_EPSG.25832", "y_EPSG.25832", "unique_ID", "date", "day_of_year", "month_of_year","year", "project_category"))
+names(clean_data)
+names(clean_data)<-c("species", "n_individuals", "federal_state", "method", "effort_m","waterbody_name", "waterbody_type", "x_EPSG_25832", "y_EPSG_25832", "unique_ID", "date", "year_day", "year_month", "year", "project_category")
+clean_data<-clean_data[clean_data$effort_m>10,]  #### if effort is less than 10 metres smething is wrong ;)
+write.csv(clean_data, "C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/clean_data/clean_data.csv", row.names =F)
+rm(main_dat_copy, main_dat, i, k, unique_IDs)
