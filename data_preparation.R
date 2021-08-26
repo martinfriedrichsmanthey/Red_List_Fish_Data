@@ -307,5 +307,18 @@ clean_data<-subset(main_dat, select=c("art__art", "individuenzahlGesamt", "excel
 names(clean_data)
 names(clean_data)<-c("species", "n_individuals", "federal_state", "method", "effort_m","waterbody_name", "waterbody_type", "x_EPSG_25832", "y_EPSG_25832", "unique_ID", "date", "year_day", "year_month", "year", "project_category")
 clean_data<-clean_data[clean_data$effort_m>10,]  #### if effort is less than 10 metres smething is wrong ;)
+
+#### remove some NAs
+clean_data<-clean_data[!is.na(clean_data$species),]
+clean_data$waterbody_type<-ifelse(clean_data$waterbody_type=="",NA,clean_data$waterbody_type)
+
+#### clean unique_ID column
+clean_data$unique_ID<-gsub("Ã¼","ue",clean_data$unique_ID)
+clean_data$unique_ID<-gsub("-","_",clean_data$unique_ID)
+clean_data$unique_ID<-gsub(" ","_",clean_data$unique_ID)
+clean_data$unique_ID<-gsub("ÃŸ","ss",clean_data$unique_ID)
+clean_data$unique_ID<-gsub("Â","",clean_data$unique_ID)
+clean_data$unique_ID<-gsub("[[:space:]]", "", clean_data$unique_ID)
+
 write.csv(clean_data, "C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/clean_data/clean_data.csv", row.names =F)
 rm(main_dat_copy, main_dat, i, k, unique_IDs)
