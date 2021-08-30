@@ -24,6 +24,8 @@ main_dat$scaled_year_day <- scale(main_dat$year_day)
 main_dat$scaled_year_month <- scale(main_dat$year_month)
 
 specs<- unique(main_dat$species) ### list all species
+specs<-specs[order(specs)]
+
 
 #### general infos 
 #### Rhat should be less than 1.1
@@ -112,7 +114,7 @@ plot(fit1_all_years_method)
 fixef(fit1_all_years_method)
 
 
-
+?brm
 
 
 

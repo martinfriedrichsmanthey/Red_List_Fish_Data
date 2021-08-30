@@ -2,42 +2,92 @@
 ##### general settings #####
 ### directory to modelling results
 ### .rds Files
-results_dir<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/modelling_results/"
+results_dir<-"C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/modelling_results/Modell ohne Bundesländer/"
 setwd(results_dir)
 
 library(ggplot2)
 library(brms)
 
+### rename model outputs
+### !!! it is important to order alls the files and names!!!
+
+names<-read.csv("C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/clean_data/clean_data.csv")
+names<-unique(names$species)
+names<-names[order(names)]
+
+#### rename log files first
+old_file_names<-list.files("./Log-Files/")
+old_file_names<-old_file_names[order(nchar(old_file_names), old_file_names)]
+new_file_names<-gsub("data_analysis_Rote_Liste_Fische","",old_file_names)
+new_file_names<-paste0(names,new_file_names)
+
+file.rename(paste0("./Log-Files/",old_file_names),paste0("./Log-Files/",new_file_names))
+
+#### rename factor models
+old_file_names<-list.files("./7508757/", pattern="factor")
+old_file_names<-old_file_names[order(nchar(old_file_names), old_file_names)]
+new_file_names<-gsub("-output","",old_file_names)
+new_file_names<-paste0(names,new_file_names)
+
+file.rename(paste0("./7508757/",old_file_names),paste0("./7508757/",new_file_names))
+
+#### and the index files
+old_file_names<-list.files("./7508757/", pattern="index")
+old_file_names<-old_file_names[order(nchar(old_file_names), old_file_names)]
+new_file_names<-gsub("-output","",old_file_names)
+new_file_names<-paste0(names,new_file_names)
+
+file.rename(paste0("./7508757/",old_file_names),paste0("./7508757/",new_file_names))
+
 ##### plot trend for all species ####
-index_mods<-list.files(".", pattern="index_*")
-names<-gsub("index_","",index_mods)
-names<-gsub(".rds","", names)
+index_mods<-list.files("./7508757/", pattern="index_*")
 results_dat<-data.frame(species=NA, estimate=NA,Q2.5=NA, Q97.5=NA)
 
 for (i in 1:length(index_mods))
   {
-  tmp_mod<-readRDS(index_mods[i])
+  print(paste0("start with ",i))
+  tmp_mod<-readRDS(paste0("./7508757/",index_mods[i]))
   results_dat[i,1]<-names[i]
   results_dat[i,2]<-exp(fixef(tmp_mod)[2])
   results_dat[i,3]<-exp(fixef(tmp_mod)[8])
   results_dat[i,4]<-exp(fixef(tmp_mod)[11])
+  print(paste0("done with ",i))
   }
 
-##### remove species with very large CI's
-results_dat<-subset(results_dat,!results_dat$species=="Coregonus arenicolus")
-results_dat<-subset(results_dat,!results_dat$species=="Acipenser ruthenus")
-results_dat<-subset(results_dat,!results_dat$species=="Alburnus mento")
-results_dat<-subset(results_dat,!results_dat$species=="Hypophthalmichthys molitrix")
-results_dat<-subset(results_dat,!results_dat$species=="Babka gymnotrachelus")
+### check for divergent transitions (rHat above 1.1.)
+
+results_dat$divergent_transitions <-NA
+
+log_files<-list.files("./Log-Files/")
+
+for (i in 1:length(log_files))
+  {
+  tmp<-read.delim(paste0("./Log-files/",log_files[i]))
+  results_dat[i,5]<-ifelse(grepl("divergent transitions",tmp)==TRUE,paste0("YES"),paste0("NO"))
+  }
+
+##### remove species with rHat above 1.1
+unique(results_dat$species[results_dat$divergent_transitions=="YES"])
+#[1] "Acipenser ruthenus"           "Alburnus mento"               "Ameiurus melas"               "Ameiurus nebulosus"           "Babka gymnotrachelus"        
+#[6] "Ballerus ballerus"            "Ballerus sapa"                "Cobitis elongatoides"         "Coregonus arenicolus"         "Coregonus oxyrinchus"        
+#[11] "Cottus microstomus"           "Cottus perifretum"            "Ctenopharyngodon idella"      "Eudontomyzon vladykovi"       "Gymnocephalus baloni"        
+#[16] "Gymnocephalus schraetser"     "Hypophthalmichthys molitrix"  "Lampetra fluviatilis"         "Misgurnus anguillicaudatus"   "Neogobius fluviatilis"       
+#[21] "Neogobius melanostomus"       "Osmerus eperlanus"            "Petromyzon marinus"           "Platichthys flesus"           "Pomatoschistus microps"      
+#[26] "Ponticola kessleri"           "Romanogobio belingi"          "Romanogobio carpathorossicus" "Romanogobio uranoscopus"      "Romanogobio vladykovi"       
+#[31] "Sabanejewia balcanica"        "Sabanejewia baltica"          "Salvelinus fontinalis"        "Salvelinus umbla"             "Telestes souffia"            
+#[36] "Umbra pygmaea"                "Vimba vimba"                  "Zingel streber"               "Zingel zingel" 
+
 
 p<-ggplot() +
   theme_classic()+
-  geom_pointrange(data=results_dat, mapping=aes(x=species, y=estimate, ymin=Q2.5, ymax=Q9.5), size=.8, color="darkgreen")+
+  geom_pointrange(data=results_dat[results_dat$divergent_transitions=="NO",], mapping=aes(x=species, y=estimate, ymin=Q2.5, ymax=Q97.5), size=.8, color="darkgreen")+
   theme(axis.text.x = element_text(angle=90))+
   geom_hline(yintercept=1, linetype="dashed")+
   theme(text = element_text(size = 20))
 
-ggsave("C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/result_visualisation/trend_all_species.png", plot = p, dpi=300)
+plot(p)
+
+ggsave("C:/Users/zf53moho/Documents/NFDI4BioDiv/Data/Fish Data/Fischdaten_Datenbank/Red_List_Fish_Data/result_visualisation/Ergebnisse ohne Bundesländer/trend_all_species.png", plot = p, dpi=300)
 
 ##### plot estimates for each year for each species #####
 
